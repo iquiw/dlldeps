@@ -1,0 +1,8 @@
+[package]
+authors = ["Iku Iwasa <iku.iwasa@gmail.com>"]
+name = "dlldeps"
+version = "0.1.0"
+
+[dependencies]
+error-chain = "*"
+pelite = "*"
