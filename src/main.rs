@@ -12,7 +12,7 @@ use errors::*;
 
 fn main() {
     let args = std::env::args_os();
-    for arg in args {
+    for arg in args.skip(1) {
         let file_map = FileMap::open(&arg).unwrap();
         let dlls = dlldeps(file_map.as_ref()).expect("invalid pe file");
         for dll in dlls {
