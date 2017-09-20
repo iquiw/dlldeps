@@ -27,13 +27,18 @@ fn main() {
         .arg(Arg::with_name("dirs")
              .short("d")
              .value_name("DIR")
+             .help("Specify directory where DLL is searched")
              .takes_value(true))
+        .arg(Arg::with_name("long")
+             .short("l")
+             .long("long")
+             .help("Show DLL dependency arrow"))
         .arg(Arg::with_name("dlls")
              .value_name("DLL")
              .multiple(true)
              .required(true))
         .get_matches();
-    let mut dep_map: HashMap<OsString, DllDepResult> = HashMap::new();
+    let show_long = matches.is_present("long");
     let search_dirs = matches.values_of_os("dirs")
         .unwrap_or_default()
         .collect();
@@ -49,6 +54,7 @@ fn main() {
         })
         .collect();
 
+    let mut dep_map: HashMap<OsString, DllDepResult> = HashMap::new();
     while let Some(dll_pathbuf) = remain_files.pop() {
         let dlls = find_deps(&dll_pathbuf).expect("invalid pe file");
         for dll in &dlls {
@@ -67,11 +73,13 @@ fn main() {
         match v {
             &DllDepResult::Found(ref v) => {
                 println!("{}", k.to_string_lossy());
-                for d in v {
-                    println!(" -> {}", d.to_string_lossy());
+                if show_long {
+                    for d in v {
+                        println!(" -> {}", d.to_string_lossy());
+                    }
                 }
             },
-            &DllDepResult::NotFound => println!("{} -> NOTFOUND", k.to_string_lossy()),
+            &DllDepResult::NotFound => println!("{} (NOTFOUND)", k.to_string_lossy()),
         }
     }
 }
