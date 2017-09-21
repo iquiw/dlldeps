@@ -19,6 +19,7 @@ use errors::*;
 enum DllDepResult {
     NotFound,
     Found(Vec<OsString>),
+    Queued,
 }
 
 fn main() {
@@ -61,6 +62,7 @@ fn main() {
             if let Some(dep_pathbuf) = find_dll(&search_dirs, dll) {
                 if !dep_map.contains_key(dll) {
                     remain_files.push(dep_pathbuf);
+                    dep_map.insert(dll.to_os_string(), DllDepResult::Queued);
                 }
             } else {
                 dep_map.insert(dll.to_os_string(), DllDepResult::NotFound);
@@ -80,6 +82,7 @@ fn main() {
                 }
             },
             &DllDepResult::NotFound => println!("{} (NOTFOUND)", k.to_string_lossy()),
+            _ => {},
         }
     }
 }
