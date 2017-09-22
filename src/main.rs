@@ -19,6 +19,7 @@ use errors::*;
 enum DllDepResult {
     NotFound,
     Found(Vec<OsString>),
+    Invalid,
     Queued,
 }
 
@@ -57,19 +58,28 @@ fn main() {
 
     let mut dep_map: HashMap<OsString, DllDepResult> = HashMap::new();
     while let Some(dll_pathbuf) = remain_files.pop() {
-        let dlls = find_deps(&dll_pathbuf).expect("invalid pe file");
-        for dll in &dlls {
-            if let Some(dep_pathbuf) = find_dll(&search_dirs, dll) {
-                if !dep_map.contains_key(dll) {
-                    remain_files.push(dep_pathbuf);
-                    dep_map.insert(dll.to_os_string(), DllDepResult::Queued);
+        match find_deps(&dll_pathbuf) {
+            Ok(dlls) => {
+                for dll in &dlls {
+                    if let Some(dep_pathbuf) = find_dll(&search_dirs, dll) {
+                        if !dep_map.contains_key(dll) {
+                            remain_files.push(dep_pathbuf);
+                            dep_map.insert(dll.to_os_string(),
+                                           DllDepResult::Queued);
+                        }
+                    } else {
+                        dep_map.insert(dll.to_os_string(),
+                                       DllDepResult::NotFound);
+                    }
                 }
-            } else {
-                dep_map.insert(dll.to_os_string(), DllDepResult::NotFound);
+                dep_map.insert(OsString::from(dll_pathbuf.file_name().unwrap()),
+                               DllDepResult::Found(dlls));
+            },
+            Err(_) => {
+                dep_map.insert(OsString::from(dll_pathbuf.file_name().unwrap()),
+                               DllDepResult::Invalid);
             }
         }
-        dep_map.insert(OsString::from(dll_pathbuf.file_name().unwrap()),
-                       DllDepResult::Found(dlls));
     }
     for (k, v) in &dep_map {
         match v {
