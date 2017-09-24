@@ -19,7 +19,7 @@ use errors::*;
 enum DllDepResult {
     NotFound,
     Found(Vec<OsString>),
-    Invalid,
+    Invalid(Error),
     Queued,
 }
 
@@ -75,9 +75,9 @@ fn main() {
                 dep_map.insert(OsString::from(dll_pathbuf.file_name().unwrap()),
                                DllDepResult::Found(dlls));
             },
-            Err(_) => {
+            Err(err) => {
                 dep_map.insert(OsString::from(dll_pathbuf.file_name().unwrap()),
-                               DllDepResult::Invalid);
+                               DllDepResult::Invalid(err));
             }
         }
     }
@@ -92,6 +92,8 @@ fn main() {
                 }
             },
             &DllDepResult::NotFound => println!("{} (NOTFOUND)", k.to_string_lossy()),
+            &DllDepResult::Invalid(ref err) => println!("{} (Error: {})",
+                                                        k.to_string_lossy(), err),
             _ => {},
         }
     }
