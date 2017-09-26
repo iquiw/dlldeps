@@ -56,28 +56,26 @@ fn main() {
         })
         .collect();
 
-    let mut dep_map: HashMap<OsString, DllDepResult> = HashMap::new();
+    let mut dep_map: HashMap<PathBuf, DllDepResult> = HashMap::new();
     while let Some(dll_pathbuf) = remain_files.pop() {
         match find_deps(&dll_pathbuf) {
             Ok(dlls) => {
                 for dll in &dlls {
                     if let Some(dep_pathbuf) = find_dll(&search_dirs, dll) {
-                        if !dep_map.contains_key(dll) {
-                            remain_files.push(dep_pathbuf);
-                            dep_map.insert(dll.to_os_string(),
+                        if !dep_map.contains_key(&dep_pathbuf) {
+                            remain_files.push(dep_pathbuf.clone());
+                            dep_map.insert(dep_pathbuf,
                                            DllDepResult::Queued);
                         }
                     } else {
-                        dep_map.insert(dll.to_os_string(),
+                        dep_map.insert(PathBuf::from(dll),
                                        DllDepResult::NotFound);
                     }
                 }
-                dep_map.insert(OsString::from(dll_pathbuf.file_name().unwrap()),
-                               DllDepResult::Found(dlls));
+                dep_map.insert(dll_pathbuf, DllDepResult::Found(dlls));
             },
             Err(err) => {
-                dep_map.insert(OsString::from(dll_pathbuf.file_name().unwrap()),
-                               DllDepResult::Invalid(err));
+                dep_map.insert(dll_pathbuf, DllDepResult::Invalid(err));
             }
         }
     }
