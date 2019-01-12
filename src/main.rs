@@ -31,6 +31,7 @@ fn main() {
                 .short("d")
                 .value_name("DIR")
                 .help("Specify directory where DLL is searched")
+                .multiple(true)
                 .takes_value(true),
         )
         .arg(
