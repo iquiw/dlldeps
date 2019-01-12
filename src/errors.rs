@@ -1,8 +1,8 @@
+use pelite;
 use std::io;
 use std::str::Utf8Error;
-use pelite;
 
-error_chain!{
+error_chain! {
     foreign_links {
         IO(io::Error);
         PE(pelite::Error);
