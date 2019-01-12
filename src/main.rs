@@ -34,6 +34,12 @@ fn main() {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("found-only")
+                .short("f")
+                .long("found-only")
+                .help("Show found only"),
+        )
+        .arg(
             Arg::with_name("long")
                 .short("l")
                 .long("long")
@@ -46,6 +52,7 @@ fn main() {
                 .required(true),
         )
         .get_matches();
+    let found_only = matches.is_present("found-only");
     let show_long = matches.is_present("long");
     let search_dirs = matches.values_of_os("dirs").unwrap_or_default().collect();
     let mut remain_files: Vec<PathBuf> = matches
@@ -92,7 +99,11 @@ fn main() {
                     }
                 }
             }
-            &DllDepResult::NotFound => println!("{} (NOTFOUND)", k.to_string_lossy()),
+            &DllDepResult::NotFound => {
+                if !found_only {
+                    println!("{} (NOTFOUND)", k.to_string_lossy());
+                }
+            }
             &DllDepResult::Invalid(ref err) => println!("{} (Error: {})", k.to_string_lossy(), err),
             _ => {}
         }
