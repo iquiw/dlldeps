@@ -81,10 +81,10 @@ fn main() {
             Ok(dlls) => {
                 for dll in &dlls {
                     if let Some(dep_pathbuf) = find_dll(&search_dirs, dll) {
-                        if !dep_map.contains_key(&dep_pathbuf) {
-                            remain_files.push(dep_pathbuf.clone());
-                            dep_map.insert(dep_pathbuf, DllDepResult::Queued);
-                        }
+                        dep_map.entry(dep_pathbuf.clone()).or_insert_with(|| {
+                            remain_files.push(dep_pathbuf);
+                            DllDepResult::Queued
+                        });
                     } else {
                         dep_map.insert(PathBuf::from(dll), DllDepResult::NotFound);
                     }
@@ -98,7 +98,7 @@ fn main() {
     }
     for (k, v) in &dep_map {
         match v {
-            &DllDepResult::Found(ref v) => {
+            DllDepResult::Found(ref v) => {
                 println!("{}", k.to_string_lossy());
                 if show_long {
                     for d in v {
@@ -106,7 +106,7 @@ fn main() {
                     }
                 }
             }
-            &DllDepResult::NotFound => {
+            DllDepResult::NotFound => {
                 if !found_only {
                     println!("{} (NOTFOUND)", k.to_string_lossy());
                 }
@@ -138,7 +138,7 @@ fn find_deps(path: &Path) -> Result<Vec<OsString>> {
     let mut vec = vec![];
     for desc in file.imports()? {
         let dll_name = desc.dll_name()?;
-        vec.push(dll_name.to_str().map(|s| OsString::from(s))?);
+        vec.push(dll_name.to_str().map(OsString::from)?);
     }
     Ok(vec)
 }
