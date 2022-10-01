@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 
-use clap::{App, Arg};
+use clap::{Arg, ArgAction, Command};
 use pelite::pe64::{Pe, PeFile};
 use pelite::FileMap;
 
@@ -24,46 +24,52 @@ enum DllDepResult {
 }
 
 fn main() {
-    let matches = App::new("DllDeps")
+    let matches = Command::new("DllDeps")
         .about("DLL dependency resolver")
         .arg(
-            Arg::with_name("dirs")
-                .short("d")
+            Arg::new("dirs")
+                .short('d')
                 .value_name("DIR")
-                .help("Specify directory where DLL is searched")
-                .multiple(true)
-                .takes_value(true),
+                .action(ArgAction::Append)
+                .num_args(1)
+                .help("Specify directory where DLL is searched"),
         )
         .arg(
-            Arg::with_name("found-only")
-                .short("f")
+            Arg::new("found-only")
+                .short('f')
                 .long("found-only")
+                .action(ArgAction::SetTrue)
                 .help("Show found only"),
         )
         .arg(
-            Arg::with_name("long")
-                .short("l")
+            Arg::new("long")
+                .short('l')
                 .long("long")
+                .action(ArgAction::SetTrue)
                 .help("Show DLL dependency arrow"),
         )
         .arg(
-            Arg::with_name("dlls")
+            Arg::new("dlls")
                 .value_name("DLL")
-                .multiple(true)
+                .action(ArgAction::Append)
+                .num_args(1)
                 .required(true),
         )
         .get_matches();
-    let found_only = matches.is_present("found-only");
-    let show_long = matches.is_present("long");
-    let search_dirs = matches.values_of_os("dirs").unwrap_or_default().collect();
+    let found_only = matches.contains_id("found-only");
+    let show_long = matches.contains_id("long");
+    let search_dirs = matches
+        .get_many::<String>("dirs")
+        .unwrap_or_default()
+        .collect::<Vec<_>>();
     let mut remain_files: Vec<PathBuf> = matches
-        .values_of_os("dlls")
+        .get_many::<String>("dlls")
         .unwrap_or_default()
         .filter_map(|file| {
             if let Ok(pathbuf) = Path::new(&file).canonicalize() {
                 Some(pathbuf)
             } else {
-                println!("File Not Found: {}", file.to_string_lossy());
+                println!("File Not Found: {}", file);
                 None
             }
         })
@@ -111,9 +117,10 @@ fn main() {
     }
 }
 
-fn find_dll<'a, S>(dirs: &Vec<&'a OsStr>, name: &S) -> Option<PathBuf>
+fn find_dll<S, T>(dirs: &Vec<S>, name: &T) -> Option<PathBuf>
 where
-    S: AsRef<Path>,
+    S: AsRef<OsStr>,
+    T: AsRef<Path>,
 {
     for dir in dirs {
         let mut pathbuf = PathBuf::from(dir);
