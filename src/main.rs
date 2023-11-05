@@ -111,7 +111,7 @@ fn main() {
                     println!("{} (NOTFOUND)", k.to_string_lossy());
                 }
             }
-            &DllDepResult::Invalid(ref err) => println!("{} (Error: {})", k.to_string_lossy(), err),
+            DllDepResult::Invalid(err) => println!("{} (Error: {})", k.to_string_lossy(), err),
             _ => {}
         }
     }
